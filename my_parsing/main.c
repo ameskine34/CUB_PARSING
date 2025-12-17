@@ -6,7 +6,7 @@
 /*   By: ameskine <ameskine@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 15:42:49 by ameskine          #+#    #+#             */
-/*   Updated: 2025/12/15 15:30:14 by ameskine         ###   ########.fr       */
+/*   Updated: 2025/12/17 20:21:07 by ameskine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,9 +87,9 @@ int map_check(char *line)
 {   
     if (!line || line[0] == '\0')
         return (1);
-    if (ft_strnstr(line, "1",ft_strlen(line)))
-        return(1);
-    return (0);
+    if (ft_strnstr(line, "1",1))
+        return(0);
+    return (1);
 }
 
 int get_data_identifier(char *file, t_data **data)
@@ -111,6 +111,7 @@ int get_data_identifier(char *file, t_data **data)
             ft_lstadd_back(&(file_data->data), ft_lstnew(ft_strdup(line)));
             free(line);
         }
+        
         else
             free(line);
     }
@@ -129,11 +130,11 @@ int arr_len(char **arr)
 }
 
 int check_identifier(t_file_data *file_data, char *str)
-{   
+{
     char **arr_data;
     
     arr_data = ft_split(str, ' ');
-    if (!file_data || !str || !arr_data)
+    if (!file_data || !arr_data || str[0] == '1')
         return (1);
     if (arr_len(arr_data) >= 2)
     {
@@ -150,7 +151,7 @@ int check_identifier(t_file_data *file_data, char *str)
         else if (strcmp(arr_data[0], "F") == 0)
             file_data->f_color = ft_strdup(arr_data[1]);
         else
-            return (free_split(arr_data), printf("Error: Unknown identifier\n"), 1);
+            return (free_split(arr_data), 1);
     }
     free_split(arr_data);
     return (0);
@@ -160,17 +161,23 @@ int process_data(t_file_data *file_data)
 {
     t_list *data;
     char *str;
-
+    
     data = file_data->data;
     while (data)
     {
-        printf("Identifier processed: %s\n", str);
         str = (char *)data->content;
-        if (map_check(str))
-            break;
         if (check_identifier(file_data, str))
-            return (1);
-        // printf("Identifier processed: %s\n", str);
+        {
+            if (!map_check(str))
+            {
+                while (data)
+                {
+                    ft_lstadd_back(&(file_data->map), ft_lstnew(ft_strtrim((char *)data->content, "\n")));
+                    data = data->next;
+                }
+                return (0);
+            }
+        }
         data = data->next;
     }
     return (0);
@@ -195,6 +202,96 @@ int file_data_alloc(t_file_data **file_data)
     return (0);
 }
 
+int check_dup(char c)
+{
+    static int flags[256] = {0};
+    if (c == 'N' || c == 'S' || c == 'E' || c == 'W')
+    {
+        if (flags[(unsigned char)c])
+            return (1);
+        flags[(unsigned char)c] = 1;
+    }
+    return (0);
+}
+
+int invalid_char_in_line(char *line)
+{
+    int i = 0;
+    while (line[i])
+    {
+        if (line[i] != '1' && line[i] != '0' && line[i] != 'N' && line[i] != 'S'
+            && line[i] != 'E' && line[i] != 'W' && line[i] != ' ')
+            return (1);
+        if (check_dup(line[i]))
+            return (1);
+        i++;
+    }
+    return (0);
+}
+
+int invalid_hf_line(char *line)
+{
+    int i = 0;
+    while (line[i])
+    {
+        if (line[i] != '1' && line[i] != ' ')
+            return (1);
+        i++;
+    }
+    return (0);
+}
+
+int invalid_extreme_line(char *line)
+{
+    int i = 0;
+    int len;
+
+    len = ft_strlen(line);
+    if (line[0] != '1' && line[0] != ' ')
+        return (1);
+    if (line[len - 1] != '1' && line[len - 1] != ' ')
+        return (1);
+    return (0);
+}
+
+int validation_checks(t_file_data *file_data)
+{
+    t_list *map;
+
+    map = file_data->map;
+    if (invalid_hf_line((char *)map->content))
+        return (printf("Error: Invalid first line in map\n"), 1);
+    if (invalid_hf_line((char *)ft_lstlast(map)->content))
+        return (printf("Error: Invalid last line in map\n"), 1);
+    return (0);
+}
+
+int check_valid_map(t_file_data *file_data)
+{
+    t_list *map;
+    char *line;
+    int i;
+
+    map = file_data->map;
+    if (!map)
+        return (printf("Error: Map is empty\n"), 1);
+    if (ft_lstsize(map) < 3)
+        return (printf("Error: Map is too small\n"), 1);
+    while (map)
+    {   
+        i = 0;
+        line = (char *)map->content;
+        if (invalid_char_in_line(line))
+            return (printf("Error: Invalid character in map or dup \n"), 1);
+        if (invalid_extreme_line(line))
+            return (printf("Error: Invalid extreme line in map\n"), 1);
+        map = map->next;
+    }
+    if (validation_checks(file_data))
+        return (1);
+    return (0);
+}
+
 int parsing(char *file, t_data **data)
 {
     t_file_data *file_data;
@@ -205,6 +302,13 @@ int parsing(char *file, t_data **data)
     if (get_data_identifier(file, data))
         return (1);
     if (process_data(file_data))
+        return (1);
+    if (!file_data->n_tex || !file_data->s_tex || !file_data->w_tex || !file_data->e_tex
+        || !file_data->f_color || !file_data->c_color)
+    {
+        return (printf("Error: Missing identifiers \n"), 1);
+    }
+    if (check_valid_map(file_data))
         return (1);
     return (0);
 }
