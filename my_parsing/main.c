@@ -6,7 +6,7 @@
 /*   By: ameskine <ameskine@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 15:42:49 by ameskine          #+#    #+#             */
-/*   Updated: 2025/12/17 20:21:07 by ameskine         ###   ########.fr       */
+/*   Updated: 2025/12/17 21:02:00 by ameskine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,12 +83,28 @@ int line_check(char *line)
     return (1);
 }
 
+int white_spaces(char *line)
+{
+    int i = 0;
+    int j = 0;
+    while (line[i])
+    {
+        if (line[j] == ' ' || line[j] == '\t')
+            j++;
+        i++;
+    }
+    return (j);
+}
+
 int map_check(char *line)
 {   
     if (!line || line[0] == '\0')
         return (1);
     if (ft_strnstr(line, "1",1))
         return(0);
+    int i = white_spaces(line); 
+    if (line[i] != '1')
+        return (printf("Error: Map not starting with 1\n"), 1);
     return (1);
 }
 
@@ -254,18 +270,6 @@ int invalid_extreme_line(char *line)
     return (0);
 }
 
-int validation_checks(t_file_data *file_data)
-{
-    t_list *map;
-
-    map = file_data->map;
-    if (invalid_hf_line((char *)map->content))
-        return (printf("Error: Invalid first line in map\n"), 1);
-    if (invalid_hf_line((char *)ft_lstlast(map)->content))
-        return (printf("Error: Invalid last line in map\n"), 1);
-    return (0);
-}
-
 int check_valid_map(t_file_data *file_data)
 {
     t_list *map;
@@ -273,10 +277,15 @@ int check_valid_map(t_file_data *file_data)
     int i;
 
     map = file_data->map;
+    line = (char *)map->content;
     if (!map)
         return (printf("Error: Map is empty\n"), 1);
     if (ft_lstsize(map) < 3)
         return (printf("Error: Map is too small\n"), 1);
+    if (invalid_hf_line(line))
+        return (printf("Error: Invalid first line in map\n"), 1);
+    if (invalid_hf_line((char *)ft_lstlast(map)->content))
+        return (printf("Error: Invalid last line in map\n"), 1);
     while (map)
     {   
         i = 0;
@@ -287,8 +296,6 @@ int check_valid_map(t_file_data *file_data)
             return (printf("Error: Invalid extreme line in map\n"), 1);
         map = map->next;
     }
-    if (validation_checks(file_data))
-        return (1);
     return (0);
 }
 
