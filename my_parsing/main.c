@@ -6,7 +6,7 @@
 /*   By: ameskine <ameskine@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/03 15:42:49 by ameskine          #+#    #+#             */
-/*   Updated: 2025/12/17 21:02:00 by ameskine         ###   ########.fr       */
+/*   Updated: 2025/12/22 17:17:39 by ameskine         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,9 +100,11 @@ int map_check(char *line)
 {   
     if (!line || line[0] == '\0')
         return (1);
-    if (ft_strnstr(line, "1",1))
-        return(0);
-    int i = white_spaces(line); 
+    // if (ft_strnstr(line, "1",1))
+    //     return(0);
+    int i = white_spaces(line);
+    if (line[i] == '\0') 
+        return (1); 
     if (line[i] != '1')
         return (printf("Error: Map not starting with 1\n"), 1);
     return (1);
@@ -250,7 +252,7 @@ int invalid_hf_line(char *line)
     int i = 0;
     while (line[i])
     {
-        if (line[i] != '1' && line[i] != ' ')
+        if (line[i] != '1' && line[i] != ' ')       
             return (1);
         i++;
     }
